@@ -11,6 +11,6 @@ Note that CS CZ Map Installer is still in beta, which means you should expect
 bugs and not blame me if it blows up your computer. :3
 
 ## License
-[MIT](../blob/master/LICENSE)
+[MIT](LICENSE)
 
 [pyside_link]: https://pypi.python.org/pypi/PySide/1.2.4
