@@ -1,9 +1,8 @@
 # CS CZ Map Installer
 
 A simple, cross-platform GUI app that installs maps in Counter Strike/Counter
-Strike: Condition Zero games.
-
-CS CZ Map Installer uses [PySide 1.2.4][pyside_link].
+Strike: Condition Zero games, written in Python using
+[PySide 1.2.4][pyside].
 
 ## Beta
 
@@ -13,4 +12,4 @@ bugs and not blame me if it blows up your computer. :3
 ## License
 [MIT](LICENSE)
 
-[pyside_link]: https://pypi.python.org/pypi/PySide/1.2.4
+[pyside]: https://pypi.python.org/pypi/PySide/1.2.4
