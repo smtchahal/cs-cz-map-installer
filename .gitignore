@@ -70,3 +70,6 @@ target/
 
 # /setup.py is only used by py2exe
 /setup.py
+
+# Windows executables
+*.exe
