@@ -5,12 +5,25 @@ the main window of the application.
 
 import sys
 import os
+import logging
 
 from PySide import QtGui
 from PySide.QtGui import QMessageBox
 
 from .dialogs import ErrorDialog
 from . import mapinstaller
+
+LOGGING_FORMAT = ("[%(asctime)s] %(levelname)s "
+                "[%(name)s.%(funcName)s:%(lineno)d] %(message)s")
+try:
+    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, filemode='a',
+                        filename='mainwindow.log')
+    logger = logging.getLogger(__name__)
+except PermissionError:
+    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
+    logger = logging.getLogger(__name__)
+    logger.warning(' '.join("""Don't have write permission in current directory,
+                    logging to stderr instead""".split()))
 
 class MainWindow(QtGui.QMainWindow):
     """
@@ -91,6 +104,16 @@ class MainWindow(QtGui.QMainWindow):
         except mapinstaller.InvalidMapDirectoryError:
             self.dialog = ErrorDialog('Invalid map directory.')
             self.dialog.exec_()
+        except PermissionError:
+            self.dialog = ErrorDialog('No permission to write to {} directory,'
+                    ' did you run the application as administrator?'.format(gameType))
+            self.dialog.exec_()
+        except Exception as e:
+            template = "An exception of type {0} occured. Arguments:\n{1!r}"
+            message = template.format(type(e).__name__, e.args)
+            logging.exception('Uncaught exception occured')
+            self.dialog = ErrorDialog(message)
+            self.dialog.exec_()
 
     def installAction(self):
         """The handler for the "Install Map" click button"""
@@ -166,13 +189,14 @@ class MainWindow(QtGui.QMainWindow):
 
         elif sys.platform == 'win32':
             # Windows
-            drive = os.getenv('SystemDrive') or 'C:'
+            drives = mapinstaller.get_win_drives()
             paths = []
-            paths.append(drive + r'\Program Files (x86)')
-            paths.append(drive + r'\Program Files')
-            paths.append(drive)
-            self.mapPathEdit.setText(drive + '\\')
-            self.gamePathEdit.setText(mapinstaller.get_game_path(paths))
+            for drive in drives:
+                paths.append(drive + r'\Program Files (x86)')
+                paths.append(drive + r'\Program Files')
+                paths.append(drive)
+            self.mapPathEdit.setText(drives[0] + '\\')
+            self.gamePathEdit.setText(mapinstaller.get_game_path(paths) or '')
 
     def mapPathSelect(self):
         """Handle click on Select Map Path button"""

@@ -6,6 +6,7 @@ functions
 
 import sys
 import os
+import string
 import hashlib
 import shutil
 import tempfile
@@ -13,9 +14,15 @@ import logging
 
 LOGGING_FORMAT = ("[%(asctime)s] %(levelname)s "
                 "[%(name)s.%(funcName)s:%(lineno)d] %(message)s")
-logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, filemode='a',
-                    filename='mapinstaller.log')
-logger = logging.getLogger(__name__)
+try:
+    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, filemode='a',
+                        filename='mapinstaller.log')
+    logger = logging.getLogger(__name__)
+except PermissionError:
+    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
+    logger = logging.getLogger(__name__)
+    logger.warning("Don't have write permission in current"
+                    " directory, logging to stderr instead")
 
 class SameDirectoryError(OSError):
     """Raised when game_path and map_path are the same directory"""
@@ -87,14 +94,13 @@ def install_map(map_path, game_path, game_type, replace=False):
 
     elif 'maps' in ls_dirs(map_path):
         logger.info('Found "maps" inside')
-        tempdir = tempfile.mkdtemp()
-        logger.info('Created temporary directory {}'.format(tempdir))
-        map_path_new = os.path.join(tempdir, game_type)
-        logger.info('TEMP: Copying {} to {}'.format(map_path, map_path_new))
-        shutil.copytree(map_path, map_path_new)
-        copy_map_to_game(tempdir, game_path, game_type, replace=replace)
-        logger.info('Removing temporary directory {}'.format(tempdir))
-        shutil.rmtree(tempdir)
+        with tempfile.TemporaryDirectory() as tempdir:
+            logger.info('Created temporary directory {}'.format(tempdir))
+            map_path_new = os.path.join(tempdir, game_type)
+            logger.info('TEMP: Copying {} to {}'.format(map_path, map_path_new))
+            shutil.copytree(map_path, map_path_new)
+            copy_map_to_game(tempdir, game_path, game_type, replace=replace)
+            logger.info('Removing temporary directory {}'.format(tempdir))
     else:
         logger.info('Inside else')
         found = False
@@ -109,15 +115,14 @@ def install_map(map_path, game_path, game_type, replace=False):
                                                                 game_type,
                                         os.path.join(game_path, game_type)))
         logger.info('map_path = ' + map_path)
-        tempdir = tempfile.mkdtemp()
-        logger.info('Created temporary directory {}'.format(tempdir))
-        os.makedirs(os.path.join(tempdir, game_type), exist_ok=True)
-        map_path_new = os.path.join(tempdir, game_type, 'maps')
-        logger.info('TEMP: Copying {} to {}'.format(map_path, map_path_new))
-        shutil.copytree(map_path, map_path_new)
-        copy_map_to_game(tempdir, game_path, game_type, replace=replace)
-        logger.info('Removing temporary directory {}'.format(tempdir))
-        shutil.rmtree(tempdir)
+        with tempfile.TemporaryDirectory() as tempdir:
+            logger.info('Created temporary directory {}'.format(tempdir))
+            os.makedirs(os.path.join(tempdir, game_type), exist_ok=True)
+            map_path_new = os.path.join(tempdir, game_type, 'maps')
+            logger.info('TEMP: Copying {} to {}'.format(map_path, map_path_new))
+            shutil.copytree(map_path, map_path_new)
+            copy_map_to_game(tempdir, game_path, game_type, replace=replace)
+            logger.info('Removing temporary directory {}'.format(tempdir))
 
 def copy_map_to_game(map_path, game_path, game_type, replace=False):
     """
@@ -136,18 +141,18 @@ def copy_map_to_game(map_path, game_path, game_type, replace=False):
     """
     logger.info('About to go walk inside {}'.format(os.path.join(map_path,
                                                                 game_type)))
-    for dir_path, dir_names, file_names in os.walk(os.path.join(map_path,
+    for dirpath, dirnames, filenames in os.walk(os.path.join(map_path,
                                                             game_type)):
-        rel_path = dir_path[len(map_path)+1:]
-        dir_path2 = os.path.join(game_path, rel_path)
+        relpath = dirpath[len(map_path)+1:]
+        dirpath2 = os.path.join(game_path, relpath)
 
-        if not os.path.isdir(dir_path2):
-            logger.warning(('Directory {} did not exist,'
-                            ' creating').format(dir_path2))
-            os.makedirs(dir_path2)
-        for file_name in file_names:
-            fsrc = os.path.join(dir_path, file_name)
-            fdst = os.path.join(dir_path2, file_name)
+        if not os.path.isdir(dirpath2):
+            logger.warning('Directory {} does not exist, creating'
+                            .format(dirpath2))
+            os.makedirs(dirpath2)
+        for filename in filenames:
+            fsrc = os.path.join(dirpath, filename)
+            fdst = os.path.join(dirpath2, filename)
             if os.path.isfile(fdst) and not replace:
                 logger.info('SKIPPED Copying {} to {}'.format(fsrc, fdst))
                 continue
@@ -159,7 +164,7 @@ def compare_dirs(map_path, game_path, game_type):
     """
     Compare map_path and game_path recursively, to see if there exist
     different files with the same name in game_path as in map_path.
-    Returns a tuple containing full path of the first differing files
+    Return a tuple containing full path of the first differing files
     found in map_path and game_path, respectively.
 
     Args:
@@ -168,25 +173,25 @@ def compare_dirs(map_path, game_path, game_type):
         game_type (str): the game type (usually either of 'czero' or 'cstrike')
 
     Returns:
-        a tuple containing full path to the first differeing files
-        fonnd in map_path and game_path, respectively.
+        a tuple containing full path to the first differing files found
+        in map_path and game_path, respectively; None if none are found
     """
     if os.path.realpath(map_path) == os.path.realpath(game_path):
         raise SameDirectoryError("'{}' and '{}' are the same directories"
             .format(map_path, game_path))
-    for dir_path, dir_names, file_names in os.walk(os.path.join(map_path,
+    for dirpath, dirnames, filenames in os.walk(os.path.join(map_path,
                                                                 game_type)):
-        rel_path = dir_path[len(map_path)+1:]
-        dir_path2 = os.path.join(game_path, rel_path)
+        relpath = dirpath[len(map_path)+1:]
+        dirpath2 = os.path.join(game_path, relpath)
 
-        for file_name1 in file_names:
-            file_names2 = ls_files(dir_path2)
-            if file_names2 is None:
+        for filename1 in filenames:
+            filenames2 = ls_files(dirpath2)
+            if filenames2 is None:
                 break
-            for file_name2 in file_names2:
-                file1 = os.path.join(dir_path, file_name1)
-                file2 = os.path.join(dir_path2, file_name2)
-                if (file_name1 == file_name2 and
+            for filename2 in filenames2:
+                file1 = os.path.join(dirpath, filename1)
+                file2 = os.path.join(dirpath2, filename2)
+                if (filename1 == filename2 and
                     sha1sum(file1) != sha1sum(file2)):
                     return (file1, file2)
     return None
@@ -200,26 +205,10 @@ def find_dir(name, path):
         path (str): the path in which to search
 
     Returns:
-        the first directory with name found in path
+        the first directory with name found in path, None if not found
     """
     for root, dirs, files in os.walk(path):
         if name in dirs:
-            return os.path.join(root, name)
-    return None
-
-def find_file(name, path):
-    """
-    Find the first file with name found in path.
-
-    Args:
-        name (str): the name of the file to find
-        path (str): the path in which to search
-
-    Returns:
-        the first file with name found in path
-    """
-    for root, dirs, files in os.walk(path):
-        if name in files:
             return os.path.join(root, name)
     return None
 
@@ -231,11 +220,11 @@ def ls_dirs(path):
         path (str): the path in which to search
 
     Returns:
-        a list containing all directories in path
+        a set containing all directories in path, None if path is non-existent
     """
 
-    for dir_path, dir_names, file_names in os.walk(path):
-        return dir_names
+    for dirpath, dirnames, filenames in os.walk(path):
+        return set(dirnames)
     return None
 
 def ls_files(path):
@@ -246,10 +235,10 @@ def ls_files(path):
         path (str): the path in which to search
 
     Returns:
-        a list containing all files in path
+        a set containing all files in path, None if path is non-existent
     """
-    for dir_path, dir_names, file_names in os.walk(path):
-        return file_names
+    for dirpath, dirnames, filenames in os.walk(path):
+        return set(filenames)
     return None
 
 def get_game_path(paths, games=('czero', 'cstrike')):
@@ -272,3 +261,20 @@ def get_game_path(paths, games=('czero', 'cstrike')):
                 if find_res:
                     return os.path.dirname(find_res)
     return None
+
+def get_win_drives():
+    """
+    Return a list of available Windows drives (as in ['C', 'D', 'E']), the first
+    one being the system drive (if found using os.getenv('SystemDrive')) in
+    alphabetical order.
+
+    Returns:
+        the list of available Windows drives, an empty list if none are found
+    """
+    drives = []
+    if os.getenv('SystemDrive'):
+        drives.append(os.getenv('SystemDrive'))
+    for drive in string.ascii_uppercase:
+        if os.path.isdir(drive + ':\\') and drive not in drives:
+            drives.append(drive)
+    return drives
