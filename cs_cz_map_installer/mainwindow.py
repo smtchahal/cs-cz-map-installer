@@ -15,15 +15,8 @@ from . import mapinstaller
 
 LOGGING_FORMAT = ("[%(asctime)s] %(levelname)s "
                 "[%(name)s.%(funcName)s:%(lineno)d] %(message)s")
-try:
-    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, filemode='a',
-                        filename='mainwindow.log')
-    logger = logging.getLogger(__name__)
-except PermissionError:
-    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
-    logger = logging.getLogger(__name__)
-    logger.warning(' '.join("""Don't have write permission in current directory,
-                    logging to stderr instead""".split()))
+logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
+logger = logging.getLogger(__name__)
 
 class MainWindow(QtGui.QMainWindow):
     """

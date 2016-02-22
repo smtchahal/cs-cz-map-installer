@@ -14,15 +14,8 @@ import logging
 
 LOGGING_FORMAT = ("[%(asctime)s] %(levelname)s "
                 "[%(name)s.%(funcName)s:%(lineno)d] %(message)s")
-try:
-    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, filemode='a',
-                        filename='mapinstaller.log')
-    logger = logging.getLogger(__name__)
-except PermissionError:
-    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
-    logger = logging.getLogger(__name__)
-    logger.warning("Don't have write permission in current"
-                    " directory, logging to stderr instead")
+logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
+logger = logging.getLogger(__name__)
 
 class SameDirectoryError(OSError):
     """Raised when game_path and map_path are the same directory"""
