@@ -9,7 +9,7 @@ You can either:
 
 1. **run directly from source** (requires [Python 3.4.3][python3.4.3] and
 [PySide 1.2.4][pyside]), or
-2. **[download one of the compiled releases]**. Currently there's an installer
+2. **[download one of the compiled releases][releases]**. Currently there's an installer
 available for Microsoft Windows (tesed on Windows 7 Ultimate and Windows 8.1
 Pro) and a stand-alone executable for 64-bit GNU/Linux operating systems.
 
