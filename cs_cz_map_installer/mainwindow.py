@@ -141,9 +141,9 @@ class MainWindow(QtGui.QMainWindow):
                 cancelButton = self.dialog.addButton(QMessageBox.Cancel)
                 self.dialog.setIcon(QMessageBox.Question)
                 self.dialog.setWindowTitle('Replace files?')
-                text = 'Some files in {0} overlap with files in {1}'
-                text += '\nDo you want to replace these files in {0}'
-                text += ' or skip them?'
+                text = ('Some files in {0} overlap with files in {1}'
+                        '\nDo you want to replace these files in {0}'
+                        ' or skip them?')
                 self.dialog.setText(text.format(gamePath, mapPath))
                 self.dialog.exec_()
                 clicked = self.dialog.clickedButton()

@@ -56,7 +56,8 @@ def install_map(map_path, game_path, game_type, replace=False):
         map_path (str): the map directory
         game_path (str): the game directory (containing either of 'cstrike' or
                         'czero')
-        game_type (str): the type of game; usually either of 'cstrike' or 'czero'
+        game_type (str): the type of game; usually either of 'cstrike' or
+                        'czero'
         replace (bool): whether to replace files in game_path of the same name
                         as in map_path (default: False)
 
@@ -70,12 +71,13 @@ def install_map(map_path, game_path, game_type, replace=False):
     game_path = os.path.realpath(game_path)
     if map_path == game_path:
         raise SameDirectoryError("'{}' and '{}' are the same directories"
-            .format(map_path, game_path))
+                                            .format(map_path, game_path))
 
     if game_type not in ls_dirs(game_path):
         raise InvalidGameDirectoryError(("'{}' is not a valid {} installation"
-            "(directory {} not found)").format(game_path, game_type,
-            os.path.join(game_path, game_type)))
+                                        "(directory {} not found)")
+                                        .format(game_path, game_type,
+                                        os.path.join(game_path, game_type)))
 
     if game_type in ls_dirs(map_path):
         if 'maps' not in ls_dirs(os.path.join(map_path, game_type)):
